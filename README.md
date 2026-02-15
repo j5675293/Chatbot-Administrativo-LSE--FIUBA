@@ -17,32 +17,44 @@ El sistema implementa una arquitectura en 5 capas que combina técnicas avanzada
 - **RAG Vectorial (FAISS):** Retrieval-Augmented Generation con base de datos vectorial para búsqueda semántica
 - **GraphRAG (NetworkX):** Grafo de conocimiento con entidades académicas y sus relaciones
 - **Sistema Híbrido:** Combinación inteligente de ambos sistemas con routing basado en tipo de consulta
+- **HyDE (Hypothetical Document Embeddings):** Genera documentos hipotéticos para mejorar el retrieval
+- **Query Expansion:** Expansión automática de consultas con sinónimos del dominio y LLM
 - **Anti-alucinación multi-capa:** Verificación de fidelidad, abstención, cross-referencing
+- **Memoria conversacional:** Ventana deslizante con resumen progresivo y contextualización de queries
+- **Feedback Human-in-the-Loop:** Sistema de valoración y mejora continua basada en usuarios
+- **Métricas RAGAS:** Evaluación con faithfulness, answer relevance, context precision y recall
 - **Citaciones automáticas:** Trazabilidad completa con fuentes y secciones
 - **Pipeline automatizado:** Procesamiento incremental de nuevos documentos
 - **Evaluación comparativa:** Framework de testing RAG vs GraphRAG vs Hybrid
+- **Analytics Dashboard:** Visualización de métricas y feedback del sistema
+- **Docker Compose:** Despliegue completo con un solo comando
 
 ## Arquitectura
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    Interfaz (Streamlit)                      │
-├─────────────────────────────────────────────────────────────┤
-│                      API (FastAPI)                           │
-├──────────────┬──────────────┬───────────────────────────────┤
-│              │   Answer     │                               │
-│   Hybrid     │ Synthesizer  │   Anti-Hallucination Engine   │
-│  Retriever   │  + Citation  │   (Faithfulness + Abstention) │
-│              │   Manager    │                               │
-├──────┬───────┴──────┬───────┴───────────────────────────────┤
-│      │              │                                       │
-│  RAG │   GraphRAG   │        LLM Provider                   │
-│ FAISS│  NetworkX    │     (Ollama / OpenAI)                 │
-│      │              │                                       │
-├──────┴──────────────┴───────────────────────────────────────┤
-│              Data Pipeline                                   │
-│  PDF Extraction → Cleaning → Chunking → Metadata            │
-└─────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│           Interfaz Streamlit (+ Analytics Dashboard)             │
+├─────────────────────────────────────────────────────────────────┤
+│                    API FastAPI + Feedback                        │
+├──────────────┬──────────────┬───────────────────────────────────┤
+│              │   Answer     │                                   │
+│   Hybrid     │ Synthesizer  │   Anti-Hallucination Engine       │
+│  Retriever   │  + Citation  │   (Faithfulness + Abstention +    │
+│              │   Manager    │    Cross-Reference)               │
+├──────┬───────┴──────┬───────┴───────────────────────────────────┤
+│      │              │                                           │
+│  RAG │   GraphRAG   │   Query Enhancement                      │
+│ FAISS│  NetworkX    │   (HyDE + Query Expansion)               │
+│      │              │                                           │
+├──────┴──────────────┴───────────────────────────────────────────┤
+│    Conversation Memory          LLM Provider                    │
+│  (Window + Summary)          (Ollama / OpenAI)                  │
+├─────────────────────────────────────────────────────────────────┤
+│              Data Pipeline                                       │
+│  PDF Extraction → Cleaning → Chunking → Metadata                │
+├─────────────────────────────────────────────────────────────────┤
+│          Evaluation (RAGAS + Benchmark + Feedback)               │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## 🎯 Componentes Principales
@@ -136,7 +148,7 @@ chatbot-lse-posgrados/
 │   ├── processed/               # Chunks procesados (JSON)
 │   ├── indexes/                 # Índice FAISS
 │   ├── graphs/                  # Grafo de conocimiento (GraphML + Pickle)
-│   └── evaluation/              # Reportes de evaluación
+│   └── evaluation/              # Reportes + Feedback
 ├── src/
 │   ├── data_pipeline/           # Pipeline de procesamiento
 │   │   ├── pdf_extractor.py     # Extracción dual (PyMuPDF + pdfplumber)
@@ -148,7 +160,9 @@ chatbot-lse-posgrados/
 │   │   ├── embeddings.py        # Sentence-Transformers multilingual
 │   │   ├── vector_store.py      # FAISS IndexFlatIP + MMR
 │   │   ├── retriever.py         # Retriever con cross-encoder reranking
-│   │   └── rag_chain.py         # Cadena RAG completa
+│   │   ├── rag_chain.py         # Cadena RAG completa
+│   │   ├── hyde.py              # HyDE - Hypothetical Document Embeddings
+│   │   └── query_expansion.py   # Expansión de queries con LLM y sinónimos
 │   ├── graph_rag/               # GraphRAG
 │   │   ├── entity_extractor.py  # Extracción de 10 tipos de entidades
 │   │   ├── relationship_mapper.py # 11 tipos de relaciones académicas
@@ -159,7 +173,8 @@ chatbot-lse-posgrados/
 │   │   ├── hybrid_retriever.py  # Combinación RAG + GraphRAG
 │   │   ├── anti_hallucination.py# Motor anti-alucinación
 │   │   ├── citation_manager.py  # Gestión de citaciones
-│   │   └── answer_synthesizer.py# Síntesis de respuesta final
+│   │   ├── answer_synthesizer.py# Síntesis de respuesta final
+│   │   └── conversation_memory.py # Memoria conversacional
 │   ├── llm/                     # Proveedores LLM
 │   │   ├── llm_provider.py      # Abstracción Ollama/OpenAI
 │   │   └── prompts.py           # Templates en español
@@ -168,27 +183,27 @@ chatbot-lse-posgrados/
 │   │   ├── schemas.py           # Modelos Pydantic
 │   │   ├── dependencies.py      # Inyección de dependencias
 │   │   └── routes/
-│   │       ├── chat.py          # Endpoints /chat y /chat/compare
-│   │       └── health.py        # Endpoints /health y /stats
+│   │       ├── chat.py          # /chat, /chat/compare, /feedback
+│   │       └── health.py        # /health y /stats
 │   ├── ui/                      # Interfaz
-│   │   └── app.py               # Aplicación Streamlit
+│   │   ├── app.py               # Aplicación Streamlit principal
+│   │   └── pages/
+│   │       └── analytics.py     # Dashboard de analytics
 │   └── evaluation/              # Evaluación
-│       ├── evaluator.py         # Evaluador comparativo
-│       └── test_sets.py         # Conjunto de preguntas con ground truth
+│       ├── evaluator.py         # Evaluador comparativo + RAGAS
+│       ├── test_sets.py         # Conjunto de preguntas con ground truth
+│       ├── ragas_metrics.py     # Métricas RAGAS
+│       └── feedback.py          # Sistema de feedback
 ├── tests/                       # Tests unitarios e integración
-│   ├── test_data_pipeline/
-│   ├── test_rag/
-│   ├── test_graph_rag/
-│   ├── test_hybrid/
-│   └── test_api/
+├── Dockerfile                   # Imagen Docker
+├── docker-compose.yml           # Orquestación de servicios
 ├── run_pipeline.py              # Ejecutar pipeline de datos
 ├── run_api.py                   # Lanzar API
 ├── run_app.py                   # Lanzar interfaz Streamlit
 ├── run_evaluation.py            # Ejecutar evaluación comparativa
 ├── requirements.txt             # Dependencias
 ├── pytest.ini                   # Configuración de tests
-├── .env.example                 # Variables de entorno template
-└── .gitignore
+└── .env.example                 # Variables de entorno template
 ```
 
 ## 🔄 Flujo de Procesamiento de Consulta
@@ -278,7 +293,7 @@ graph TD
 - [Ollama](https://ollama.ai/) instalado (para LLM local gratuito)
 - 4 GB de RAM mínimo (8 GB recomendado)
 
-### Paso 1: Clonar e instalar dependencias
+### Opción A: Instalación manual
 
 ```bash
 git clone https://github.com/<tu-usuario>/chatbot-lse-posgrados.git
@@ -292,45 +307,46 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### Paso 2: Configurar el LLM
+### Opción B: Docker Compose (recomendado para producción)
 
 ```bash
-# Instalar y correr Ollama (opción gratuita recomendada)
-# Descargar desde https://ollama.ai/
+# Iniciar todos los servicios (Ollama + API + UI)
+docker-compose up -d
 
+# Ver logs
+docker-compose logs -f api
+
+# Ejecutar pipeline de datos
+docker-compose run --rm pipeline
+
+# Detener
+docker-compose down
+```
+
+### Configurar el LLM
+
+```bash
 # Descargar modelo (elegir uno):
 ollama pull llama3          # 4.7 GB - Recomendado
 ollama pull llama3:8b       # Variante 8B
 ollama pull mistral         # 4.1 GB - Alternativa
 ```
 
-### Paso 3: Configurar variables de entorno
+### Configurar variables de entorno
 
 ```bash
 cp .env.example .env
 # Editar .env según tu configuración
 ```
 
-### Paso 4: Colocar los documentos PDF
-
-Colocar los PDFs en el directorio `data/raw/`, o el pipeline los copiará automáticamente desde el directorio padre.
-
-### Paso 5: Ejecutar el pipeline de datos
+### Colocar documentos y ejecutar pipeline
 
 ```bash
+# Colocar PDFs en data/raw/
 python run_pipeline.py
 ```
 
-Esto ejecuta:
-1. Extracción de texto y tablas de los PDFs
-2. Limpieza y normalización del texto
-3. Chunking inteligente (512 tokens, overlap 128)
-4. Generación de embeddings (sentence-transformers multilingual)
-5. Indexación en FAISS
-6. Construcción del grafo de conocimiento (NetworkX)
-7. Detección de comunidades (Louvain)
-
-### Paso 6: Lanzar la API y la interfaz
+### Lanzar la API y la interfaz
 
 ```bash
 # Terminal 1: API
@@ -342,19 +358,41 @@ python run_app.py
 
 Acceder a:
 - **Chatbot:** http://localhost:8501
+- **Analytics:** http://localhost:8501/analytics
 - **API Docs:** http://localhost:8000/docs
 
 ## Uso
 
-### Interfaz Streamlit
+### Ejemplos de consultas
 
-La interfaz permite:
-- Hacer consultas en lenguaje natural
-- Seleccionar modo de retrieval (RAG / GraphRAG / Híbrido)
-- Filtrar por programa académico
-- Ver confianza de la respuesta
-- Expandir fuentes citadas
-- Activar modo comparación (RAG vs GraphRAG vs Hybrid)
+```
+# Preguntas factuales
+"¿Cuál es el porcentaje mínimo de asistencia requerido?"
+"¿Qué título otorga la CEIA?"
+"¿Cuántos bimestres dura la especialización?"
+
+# Preguntas procedimentales
+"¿Cómo me inscribo en Gestión de Proyectos?"
+"¿Qué tengo que hacer para solicitar una prórroga?"
+"¿Cómo es el proceso de defensa del trabajo final?"
+
+# Preguntas comparativas (mejor con Hybrid/GraphRAG)
+"¿Cuál es la diferencia entre MIAE y MIA?"
+"¿Qué maestrías puedo hacer después de la CESE?"
+"¿Cuáles son los requisitos de la MIA y qué especialización necesito?"
+
+# Preguntas de contacto
+"¿A quién contacto para dudas sobre inscripción?"
+"¿Cuál es el email de gestión académica?"
+
+# Preguntas con memoria conversacional
+"¿Cuáles son los requisitos de la CEIA?"  →  (respuesta)
+"¿Y cuántos bimestres dura?"              →  contextualiza automáticamente a CEIA
+
+# Preguntas fuera de dominio (abstención correcta)
+"¿Cuánto cuesta la carrera?" → Abstención + contacto de fallback
+"¿Qué opinás sobre la UTN?" → Fuera de alcance
+```
 
 ### API REST
 
@@ -364,15 +402,28 @@ curl -X POST http://localhost:8000/api/v1/chat \
   -H "Content-Type: application/json" \
   -d '{"question": "¿Cuál es la asistencia mínima?", "mode": "hybrid"}'
 
+# Consulta con memoria conversacional
+curl -X POST http://localhost:8000/api/v1/chat \
+  -H "Content-Type: application/json" \
+  -d '{"question": "¿Y cuántos bimestres dura?", "mode": "hybrid", "session_id": "sesion-1"}'
+
 # Comparación de métodos
 curl -X POST http://localhost:8000/api/v1/chat/compare \
   -H "Content-Type: application/json" \
   -d '{"question": "¿Cuáles son los requisitos de la MIA?"}'
+
+# Enviar feedback
+curl -X POST http://localhost:8000/api/v1/feedback \
+  -H "Content-Type: application/json" \
+  -d '{"question": "¿Cuál es la asistencia mínima?", "answer": "75%", "rating": 5, "is_correct": true}'
+
+# Ver estadísticas de feedback
+curl http://localhost:8000/api/v1/feedback/stats
 ```
 
 ## Evaluación
 
-### Ejecutar evaluación completa
+### Ejecutar evaluación completa (con RAGAS)
 
 ```bash
 python run_evaluation.py
@@ -392,13 +443,31 @@ python run_evaluation.py --category procedural
 python run_evaluation.py --category comparative
 ```
 
-El reporte se genera en `data/evaluation/evaluation_report.json` e incluye:
-- Keyword Hit Rate por método
-- Confianza promedio
-- Tiempo de respuesta
-- Precisión de fuentes
-- Abstención correcta (preguntas fuera de dominio)
-- Desglose por categoría y dificultad
+### Métricas incluidas
+
+| Métrica | Descripción |
+|---|---|
+| **Keyword Hit Rate** | Porcentaje de palabras clave esperadas en la respuesta |
+| **RAGAS Faithfulness** | Claims de la respuesta respaldados por el contexto |
+| **RAGAS Answer Relevance** | Relevancia semántica respuesta-pregunta |
+| **RAGAS Context Precision** | Porcentaje de contextos recuperados relevantes |
+| **RAGAS Context Recall** | Cobertura de información necesaria en contextos |
+| **Source Accuracy** | Coincidencia de fuentes esperadas vs recuperadas |
+| **Abstención correcta** | Detección de preguntas fuera de dominio |
+| **Tiempo de respuesta** | Latencia en milisegundos por método |
+
+El reporte se genera en `data/evaluation/evaluation_report.json` y se visualiza en el dashboard de analytics.
+
+### Benchmark de referencia: RAG vs GraphRAG vs Hybrid
+
+| Tipo de pregunta | Mejor método | Razón |
+|---|---|---|
+| Datos específicos (nota mínima, plazos) | RAG | Información textual directa en los documentos |
+| Relaciones entre programas (requisitos) | GraphRAG | Navegación por entidades y relaciones en el grafo |
+| Comparaciones entre carreras | Hybrid | Combina texto descriptivo + estructura relacional |
+| Contactos y emails | RAG | Datos puntuales en documentos FAQ |
+| Caminos de formación (CESE → maestría) | GraphRAG | Paths entre nodos del grafo |
+| Requisitos + descripción completa | Hybrid | Necesita ambas fuentes de información |
 
 ## Tests
 
@@ -428,25 +497,98 @@ Para forzar reprocesamiento completo:
 python run_pipeline.py --force
 ```
 
-## Mecanismos anti-alucinación
+## Técnicas avanzadas implementadas
 
-1. **Verificación por embeddings:** Cada claim de la respuesta se compara semánticamente con el contexto fuente
-2. **Cross-referencing:** Consistencia entre información de RAG y GraphRAG
-3. **Abstención inteligente:** El sistema se abstiene cuando la confianza es baja o la pregunta está fuera de dominio
-4. **Contactos de fallback:** Sugiere emails de contacto relevantes cuando no puede responder
-5. **Citaciones obligatorias:** Toda respuesta incluye fuentes verificables
+### HyDE (Hypothetical Document Embeddings)
+
+Basado en [Gao et al., 2022]. En lugar de buscar directamente por la query del usuario, el sistema:
+1. Genera un "documento hipotético" con el LLM que responde la pregunta
+2. Usa el embedding de ese documento hipotético para buscar en FAISS
+3. Fusiona el embedding HyDE con el embedding directo (alpha configurable)
+4. Re-rankea contra la query original para mantener relevancia
+
+Esto mejora el retrieval porque el documento hipotético tiene vocabulario más similar a los documentos reales que la query del usuario.
+
+### Query Expansion
+
+El sistema expande cada consulta de tres formas:
+1. **Sinónimos del dominio:** Diccionario específico del LSE-FIUBA (ej: "requisito" → "condición", "materia" → "asignatura")
+2. **Reformulaciones LLM:** Genera 3 variantes de la pregunta con diferentes palabras clave
+3. **Fusión de resultados:** Combina y re-rankea resultados de todas las variantes
+
+### Memoria conversacional
+
+- **Ventana deslizante:** Mantiene los últimos N turnos de conversación
+- **Resumen progresivo:** Comprime turnos viejos en un resumen con LLM
+- **Contextualización:** Detecta pronombres y referencias anafóricas, reformula la query para que sea autocontenida
+- **Tracking de tópicos:** Identifica programas y temas discutidos en la sesión
+
+### Anti-alucinación multi-capa
+
+7 capas de protección:
+1. Verificación de fidelidad por embeddings (similitud claim-contexto)
+2. Verificación de fidelidad por LLM (análisis de claims)
+3. Verificación heurística (matching de datos específicos)
+4. Cross-referencing RAG-GraphRAG (consistencia entre fuentes)
+5. Abstención inteligente (confianza baja o fuera de dominio)
+6. Contactos de fallback (sugiere emails relevantes)
+7. Citaciones obligatorias (trazabilidad a fuentes)
+
+## Casos de fallo conocidos y limitaciones
+
+### Limitaciones del sistema
+
+| Limitación | Descripción | Mitigación |
+|---|---|---|
+| **Dependencia de LLM** | La calidad depende del modelo LLM disponible | Fallback heurístico cuando LLM no está disponible |
+| **Cobertura de documentos** | Solo responde sobre los 13 PDFs del corpus | Abstención + contacto de fallback para preguntas no cubiertas |
+| **Idioma** | Optimizado para español rioplatense | Embeddings multilingües, pero prompts en español |
+| **Actualización manual** | Los documentos deben actualizarse manualmente | Pipeline incremental con detección de cambios SHA-256 |
+| **Latencia** | Embedding + LLM puede tomar 2-10 segundos | Cross-encoder reranking agrega latencia pero mejora precisión |
+| **Información de costos** | No maneja información de aranceles | Abstención correcta para preguntas de costos |
+
+### Casos de fallo documentados
+
+1. **Preguntas ambiguas sin programa:** Cuando el usuario pregunta "¿cuáles son los requisitos?" sin especificar programa, el sistema puede mezclar información de múltiples carreras.
+   - *Mitigación:* Usar filtro por programa en la UI o clarificar en la pregunta.
+
+2. **Preguntas sobre regulaciones muy recientes:** Si el reglamento cambió después de los PDFs procesados, la información puede estar desactualizada.
+   - *Mitigación:* Re-ejecutar pipeline cuando se actualicen documentos.
+
+3. **Preguntas multi-hop complejas:** Consultas que requieren razonar sobre más de 3 saltos en el grafo pueden perder contexto.
+   - *Mitigación:* GraphRAG con profundidad configurable; complementar con RAG.
+
+4. **Tablas complejas en PDFs:** Algunas tablas de planes de estudio con formatos irregulares pueden no extraerse perfectamente.
+   - *Mitigación:* Extracción dual PyMuPDF + pdfplumber con fallback.
+
+5. **Preguntas en inglés:** El sistema responde en español aunque se pregunte en inglés; la calidad de retrieval puede disminuir.
+   - *Mitigación:* Embeddings multilingües ayudan parcialmente.
+
+### Evolución futura
+
+- Fine-tuning del modelo de embeddings para el dominio académico
+- Graph Neural Networks para node embeddings más expresivos
+- Soporte multimodal (diagramas y tablas de los PDFs)
+- Active learning con el feedback recolectado
+- Migración a microservicios para escalabilidad
 
 ## Stack tecnológico
 
 | Componente | Tecnología |
 |---|---|
 | LLM | Ollama (llama3) / OpenAI API |
-| Embeddings | sentence-transformers (multilingual-MiniLM-L12-v2) |
+| Embeddings | sentence-transformers (multilingual-MiniLM-L12-v2, 384 dims) |
 | Vector DB | FAISS (IndexFlatIP) |
 | Graph DB | NetworkX + python-louvain |
+| Query Enhancement | HyDE + Query Expansion + Cross-Encoder Reranking |
+| Anti-alucinación | Faithfulness check + Cross-reference + Abstención |
+| Memoria | Ventana deslizante + Resumen progresivo |
+| Evaluación | RAGAS (Faithfulness, Answer Relevance, Context Precision, Recall) |
+| Feedback | Human-in-the-Loop con almacenamiento JSON |
 | API | FastAPI + uvicorn |
-| UI | Streamlit |
+| UI | Streamlit (chat + analytics dashboard) |
 | PDF Processing | PyMuPDF + pdfplumber |
+| Deployment | Docker Compose (Ollama + API + UI) |
 | Testing | pytest |
 
 ## Documentos procesados

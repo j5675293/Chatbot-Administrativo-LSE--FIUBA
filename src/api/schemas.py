@@ -69,6 +69,35 @@ class GraphStats(BaseModel):
     edge_types: dict = {}
 
 
+class FeedbackRequest(BaseModel):
+    session_id: str = ""
+    question: str
+    answer: str
+    rating: int = Field(..., ge=1, le=5)
+    method: str = "hybrid"
+    confidence: float = 0.0
+    is_correct: Optional[bool] = None
+    is_complete: Optional[bool] = None
+    user_comment: str = ""
+    expected_answer: str = ""
+
+
+class FeedbackResponse(BaseModel):
+    feedback_id: str
+    status: str = "ok"
+
+
+class FeedbackStatsResponse(BaseModel):
+    total_entries: int
+    avg_rating: float
+    correct_rate: float
+    complete_rate: float
+    by_method: dict = {}
+    by_rating: dict = {}
+    low_rated_questions: list = []
+    improvement_suggestions: list[str] = []
+
+
 class HealthResponse(BaseModel):
     status: str
     llm_available: bool

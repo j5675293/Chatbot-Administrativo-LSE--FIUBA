@@ -1,6 +1,7 @@
 """
 Evaluador del sistema de chatbot. Mide retrieval quality, answer quality,
 faithfulness, y compara RAG vs GraphRAG vs Hybrid.
+Incluye métricas RAGAS (faithfulness, answer_relevance, context_precision).
 
 Autor: Juan Ruiz Otondo - CEIA FIUBA
 """
@@ -13,6 +14,8 @@ from pathlib import Path
 from typing import Optional
 
 import numpy as np
+
+from src.evaluation.ragas_metrics import RAGASEvaluator, RAGASResult
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +50,10 @@ class QuestionResult:
     graph_source_match: bool = False
     hybrid_source_match: bool = False
     best_method: str = ""
+    # RAGAS metrics
+    rag_ragas: Optional[RAGASResult] = None
+    graph_ragas: Optional[RAGASResult] = None
+    hybrid_ragas: Optional[RAGASResult] = None
 
 
 @dataclass
@@ -79,6 +86,8 @@ class EvaluationReport:
     # Abstención
     correct_abstentions: int = 0
     total_abstention_questions: int = 0
+    # RAGAS agregadas
+    ragas_summary: dict = field(default_factory=dict)
 
 
 class Evaluator:
@@ -88,12 +97,17 @@ class Evaluator:
         self,
         hybrid_retriever,
         answer_synthesizer,
+        embedding_model=None,
+        llm_provider=None,
         output_dir: Optional[Path] = None,
     ):
         self.hybrid_retriever = hybrid_retriever
         self.answer_synthesizer = answer_synthesizer
         self.output_dir = output_dir or Path("data/evaluation")
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.ragas = RAGASEvaluator(
+            embedding_model=embedding_model, llm_provider=llm_provider
+        )
 
     def evaluate(
         self, qa_pairs: list[dict], verbose: bool = True
@@ -143,8 +157,25 @@ class Evaluator:
                     setattr(qr, f"{mode_name}_time_ms",
                             (time.time() - start) * 1000)
 
-            # Calcular métricas
+            # Calcular métricas clásicas
             self._compute_metrics(qr, qa)
+
+            # Calcular métricas RAGAS por método
+            for method in ["rag", "graph", "hybrid"]:
+                answer_text = getattr(qr, f"{method}_answer", "")
+                sources = getattr(qr, f"{method}_sources", [])
+                contexts = [
+                    s.get("text_snippet", "") for s in sources if s.get("text_snippet")
+                ]
+                ragas_result = self.ragas.evaluate(
+                    question=qa["question"],
+                    answer=answer_text,
+                    contexts=contexts,
+                    ground_truth=qa.get("expected_answer", ""),
+                    expected_keywords=qa.get("expected_keywords", []),
+                )
+                setattr(qr, f"{method}_ragas", ragas_result)
+
             results.append(qr)
 
         report.question_results = results
@@ -253,6 +284,23 @@ class Evaluator:
                 ),
             }
 
+        # RAGAS summary
+        for method in ["rag", "graph", "hybrid"]:
+            ragas_list = [
+                getattr(r, f"{method}_ragas")
+                for r in results
+                if getattr(r, f"{method}_ragas") is not None
+            ]
+            if ragas_list:
+                rn = len(ragas_list)
+                report.ragas_summary[method] = {
+                    "avg_faithfulness": sum(r.faithfulness for r in ragas_list) / rn,
+                    "avg_answer_relevance": sum(r.answer_relevance for r in ragas_list) / rn,
+                    "avg_context_precision": sum(r.context_precision for r in ragas_list) / rn,
+                    "avg_context_recall": sum(r.context_recall for r in ragas_list) / rn,
+                    "avg_overall": sum(r.overall_score for r in ragas_list) / rn,
+                }
+
         # Abstención
         ood_results = [r for r in results if r.category == "out_of_domain"]
         report.total_abstention_questions = len(ood_results)
@@ -296,6 +344,10 @@ class Evaluator:
                         if report.total_abstention_questions > 0 else 0, 3
                     ),
                 },
+            },
+            "ragas": {
+                method: {k: round(v, 3) for k, v in data.items()}
+                for method, data in report.ragas_summary.items()
             },
             "by_category": report.results_by_category,
             "by_difficulty": report.results_by_difficulty,
@@ -369,6 +421,20 @@ class Evaluator:
             f"{report.graph_wins:>10} {report.hybrid_wins:>10}",
             "-" * 70,
         ]
+
+        # RAGAS metrics
+        if report.ragas_summary:
+            lines.append("\n--- Métricas RAGAS ---")
+            lines.append(f"{'Métrica':<35} {'RAG':>10} {'GraphRAG':>10} {'Hybrid':>10}")
+            lines.append("-" * 70)
+            for metric in ["avg_faithfulness", "avg_answer_relevance",
+                           "avg_context_precision", "avg_context_recall", "avg_overall"]:
+                label = metric.replace("avg_", "").replace("_", " ").title()
+                vals = []
+                for method in ["rag", "graph", "hybrid"]:
+                    val = report.ragas_summary.get(method, {}).get(metric, 0)
+                    vals.append(f"{val:>10.1%}")
+                lines.append(f"{label:<35} {''.join(vals)}")
 
         # Abstención
         if report.total_abstention_questions > 0:

@@ -20,7 +20,11 @@ from src.hybrid.hybrid_retriever import HybridRetriever
 from src.hybrid.answer_synthesizer import AnswerSynthesizer
 from src.hybrid.anti_hallucination import AntiHallucinationEngine
 from src.hybrid.citation_manager import CitationManager
+from src.hybrid.conversation_memory import ConversationMemory
 from src.llm.llm_provider import LLMProvider
+from src.rag.query_expansion import QueryExpander
+from src.rag.hyde import HyDERetriever
+from src.evaluation.feedback import FeedbackCollector
 from src.data_pipeline.pipeline_orchestrator import PipelineOrchestrator
 
 logger = logging.getLogger(__name__)
@@ -41,6 +45,10 @@ class AppDependencies:
         self.answer_synthesizer: AnswerSynthesizer = None
         self.llm_provider: LLMProvider = None
         self.pipeline: PipelineOrchestrator = None
+        self.query_expander: QueryExpander = None
+        self.hyde_retriever: HyDERetriever = None
+        self.conversation_memory: ConversationMemory = None
+        self.feedback_collector: FeedbackCollector = None
         self._initialized = False
 
     def initialize(self) -> None:
@@ -127,6 +135,36 @@ class AppDependencies:
             llm_provider=self.llm_provider,
             anti_hallucination=anti_hallucination,
             citation_manager=CitationManager(),
+        )
+
+        # Query Expander
+        if self.settings.USE_QUERY_EXPANSION:
+            self.query_expander = QueryExpander(
+                llm_provider=self.llm_provider,
+                embedding_model=self.embedding_model,
+                max_expansions=self.settings.MAX_QUERY_EXPANSIONS,
+            )
+
+        # HyDE Retriever
+        if self.settings.USE_HYDE:
+            self.hyde_retriever = HyDERetriever(
+                llm_provider=self.llm_provider,
+                embedding_model=self.embedding_model,
+                vector_store=self.vector_store,
+                reranker=reranker,
+                alpha=self.settings.HYDE_ALPHA,
+            )
+
+        # Conversation Memory
+        self.conversation_memory = ConversationMemory(
+            llm_provider=self.llm_provider,
+            window_size=self.settings.CONVERSATION_WINDOW_SIZE,
+            max_summary_length=self.settings.MAX_SUMMARY_LENGTH,
+        )
+
+        # Feedback Collector
+        self.feedback_collector = FeedbackCollector(
+            storage_path=Path(self.settings.FEEDBACK_STORAGE_PATH),
         )
 
         # Pipeline

@@ -42,6 +42,19 @@ class Settings(BaseSettings):
     CONFIDENCE_THRESHOLD: float = 0.5
     ABSTENTION_THRESHOLD: float = 0.3
 
+    # ── Query Enhancement ───────────────────────────────────
+    USE_QUERY_EXPANSION: bool = True
+    USE_HYDE: bool = True
+    HYDE_ALPHA: float = 0.6
+    MAX_QUERY_EXPANSIONS: int = 3
+
+    # ── Conversation ────────────────────────────────────────
+    CONVERSATION_WINDOW_SIZE: int = 6
+    MAX_SUMMARY_LENGTH: int = 500
+
+    # ── Feedback ────────────────────────────────────────────
+    FEEDBACK_STORAGE_PATH: str = "data/evaluation/feedback.json"
+
     # ── API ────────────────────────────────────────────────
     API_HOST: str = "0.0.0.0"
     API_PORT: int = 8000
