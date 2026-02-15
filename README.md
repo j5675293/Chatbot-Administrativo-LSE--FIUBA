@@ -1,15 +1,16 @@
-# Chatbot Administrativo Inteligente - Posgrados LSE-FIUBA
+# ASESOR ADMINISTRATIVO INTELIGENTE MEDIANTE PROCESAMEINTO DE LENGUAJE NATURAL - POSGRADO LSE-FIUBA
 
 **Trabajo Final** de la Carrera de Especialización en Inteligencia Artificial
 Laboratorio de Sistemas Embebidos (LSE) - Facultad de Ingeniería - Universidad de Buenos Aires
 
-**Autor:** Juan Ruiz Otondo
+**Autor:** Juan Ruiz Otondo - a1702
 
 ---
 
 ## Descripción
 
 Agente administrativo inteligente (chatbot) basado en Procesamiento de Lenguaje Natural para la unidad de Posgrado del Laboratorio de Sistemas Embebidos (LSE) de FIUBA. El sistema responde consultas de estudiantes sobre reglamentos, carreras de especialización (CEIA, CESE, CEIoT), maestrías (MIA, MIAE, MIoT, MCB), procesos administrativos y preguntas frecuentes.
+El sistema implementa una arquitectura en 5 capas que combina técnicas avanzadas de RAG (Retrieval-Augmented Generation) con GraphRAG y mecanismos anti-alucinación para garantizar respuestas precisas y verificables.
 
 ### Características principales
 
@@ -43,6 +44,98 @@ Agente administrativo inteligente (chatbot) basado en Procesamiento de Lenguaje 
 │  PDF Extraction → Cleaning → Chunking → Metadata            │
 └─────────────────────────────────────────────────────────────┘
 ```
+🎯 Componentes Principales
+1️⃣ Interfaz de Usuario (Streamlit)
+
+Ubicación: src/ui/app.py
+Funcionalidad: Chat conversacional con historial, visualización de fuentes y métricas de confianza
+Características:
+
+Selector de modo (RAG / GraphRAG / Hybrid)
+Respuestas en tiempo real con streaming
+Citas expandibles con trazabilidad completa
+
+
+2️⃣ API REST (FastAPI)
+
+Ubicación: src/api/
+Endpoints principales:
+
+POST /chat - Procesar consulta del usuario
+POST /chat/compare - Comparación de los 3 modos
+GET /health - Estado del sistema
+GET /stats - Estadísticas de uso
+
+
+Características: Validación Pydantic, documentación OpenAPI automática, procesamiento asíncrono
+
+3️⃣ Sistema de Recuperación Híbrido
+🔍 RAG Vectorial (FAISS)
+
+Ubicación: src/rag/
+Componentes:
+
+embeddings.py: Sentence-Transformers multilingüe
+vector_store.py: FAISS IndexFlatIP + MMR
+retriever.py: Cross-encoder re-ranking
+
+
+Ventajas: Búsqueda semántica ultra-rápida, captura similitud contextual
+
+🕸️ GraphRAG (NetworkX)
+
+Ubicación: src/graph_rag/
+Componentes:
+
+entity_extractor.py: 10 tipos de entidades académicas
+relationship_mapper.py: 11 tipos de relaciones
+graph_builder.py: Construcción del grafo de conocimiento
+graph_retriever.py: Búsqueda basada en vecindarios y caminos
+
+
+Ventajas: Razonamiento multi-hop, captura relaciones complejas
+
+🔀 Fusión Híbrida
+
+Ubicación: src/hybrid/hybrid_retriever.py
+Estrategias:
+
+Reciprocal Rank Fusion (RRF)
+Weighted Sum con pesos adaptativos
+Query-Adaptive Weighting según tipo de consulta
+
+
+
+4️⃣ Motor Anti-Alucinación
+
+Ubicación: src/hybrid/anti_hallucination.py
+Módulos:
+
+✅ Faithfulness Checker
+python- NLI (Natural Language Inference): DeBERTa-v3
+- Semantic Similarity: Similitud coseno embedding-based
+- Entailment Analysis: Verificación de implicación lógica
+🚫 Abstention Decider
+python- Umbral de confianza: < 0.6 → Abstención
+- Detector de inconsistencias en fragmentos recuperados
+- Analizador de ambigüedad en consultas
+  
+5️⃣ Pipeline de Datos
+
+Ubicación: src/data_pipeline/
+Flujo:
+
+PDF Files (data/raw/)
+    ↓ pdf_extractor.py (PyMuPDF + pdfplumber)
+Extracted Text
+    ↓ text_cleaner.py (Normalización UTF-8)
+Cleaned Text
+    ↓ chunker.py (Semantic + Overlap)
+Chunks (512-1024 tokens, 25% overlap)
+    ↓ metadata_extractor.py
+Enriched Chunks (data/processed/)
+    ↓ pipeline_orchestrator.py
+FAISS Index (data/indexes/) + Knowledge Graph (data/graphs/)
 
 ## Estructura del proyecto
 
@@ -109,6 +202,48 @@ chatbot-lse-posgrados/
 ├── .env.example                 # Variables de entorno template
 └── .gitignore
 ```
+🔄 Flujo de Procesamiento de Consulta
+mermaidgraph TD
+    A[👤 Usuario ingresa consulta] --> B[🖥️ Streamlit UI]
+    B -->|HTTP POST| C[⚡ FastAPI /chat]
+    C --> D{🔀 Hybrid Retriever}
+    
+    D -->|Paralelo| E[🔍 RAG/FAISS<br/>Búsqueda Vectorial]
+    D -->|Paralelo| F[🕸️ GraphRAG/NetworkX<br/>Búsqueda en Grafo]
+    
+    E --> G[📊 Fusión RRF]
+    F --> G
+    
+    G --> H[✍️ Answer Synthesizer]
+    H --> I[📚 Citation Manager]
+    I --> J[🛡️ Anti-Hallucination Engine]
+    
+    J -->|Faithfulness| K{✅ Score ≥ 0.6?}
+    K -->|Sí| L[📤 Respuesta con citas]
+    K -->|No| M[🚫 Abstención honesta]
+    
+    L --> N[🖥️ Streamlit renderiza]
+    M --> N
+    N --> O[👤 Usuario recibe respuesta]
+    
+    style D fill:#FFF3E0
+    style E fill:#E3F2FD
+    style F fill:#E8F5E9
+    style J fill:#FFEBEE
+    style K fill:#FFF9C4
+🛠️ Stack Tecnológico
+Backend & Core
+ComponenteTecnologíaPropósitoFramework APIFastAPI + UvicornServicios REST asíncronosValidaciónPydanticSchemas y configuraciónEmbeddingsSentence-TransformersVectorización semántica multilingüeVector SearchFAISSBúsqueda de similitud ultra-rápidaGraph AnalysisNetworkXAnálisis de grafo de conocimientoCommunity DetectionLouvainClustering temáticoRe-rankingCross-EncoderRefinamiento de resultadosNLIDeBERTa-v3Verificación de fidelidadPDF ProcessingPyMuPDF + pdfplumberExtracción dual de PDFsOCRTesseractDocumentos escaneados
+LLM Providers
+ModoProveedorModelosLocalOllamaLlama 3.1 (70B), Mistral 7BCloudOpenAIGPT-4, GPT-4 Turbo
+Frontend
+ComponenteTecnologíaUI FrameworkStreamlitHTTP Clientrequests
+Testing & Quality
+ComponenteTecnologíaTestingpytestCoveragepytest-covType Checkingmypy
+📊 Mapeo Arquitectura → Código
+Capa ArquitectónicaDirectorio/MóduloArchivos PrincipalesCapa 1: Interfazsrc/ui/app.py, run_app.pyCapa 2: APIsrc/api/main.py, schemas.py, routes/*, run_api.pyCapa 3: Coresrc/rag/src/graph_rag/src/hybrid/hybrid_retriever.pyanti_hallucination.pyanswer_synthesizer.pyCapa 4: LLM Providersrc/llm/llm_provider.py, prompts.pyCapa 5: Data Pipelinesrc/data_pipeline/pdf_extractor.pytext_cleaner.pychunker.pypipeline_orchestrator.py
+🚀 Inicio Rápido
+
 
 ## Instalación y Configuración
 
@@ -308,5 +443,56 @@ python run_pipeline.py --force
 | Programa de Vinculación.pdf | Vinculación | Programa de vinculación profesional |
 
 ---
+🎯 Características Destacadas
+✅ Sistema Híbrido Único
+Combina lo mejor de RAG vectorial (rapidez, similitud semántica) con GraphRAG (razonamiento relacional, multi-hop) mediante fusión adaptativa que ajusta pesos según el tipo de consulta.
+🛡️ Anti-Alucinación Robusto
 
+Faithfulness: Verifica cada afirmación usando NLI y similitud semántica
+Abstention: Se abstiene honestamente cuando la confianza es baja (< 0.6)
+Citation Manager: Trazabilidad completa de cada afirmación a su documento fuente
+
+🌍 Optimizado para Español
+
+Embeddings multilingües especializados
+Normalización de texto en español
+Prompts nativos en español
+Manejo de caracteres especiales (tildes, ñ)
+
+📊 Evaluación Comparativa
+Sistema de evaluación automatizada que compara métricas de:
+
+Precisión y Recall
+F1-Score
+Latencia
+Confidence Score
+
+🔧 Modularidad y Extensibilidad
+
+Arquitectura de capas bien definidas
+Componentes intercambiables (LLM providers)
+Interfaces claras entre módulos
+Alto cohesión, bajo acoplamiento
+
+🏛️ Principios de Diseño
+Clean Architecture
+
+✅ Separación de responsabilidades
+✅ Independencia de frameworks
+✅ Testabilidad por capas
+✅ Inversión de dependencias
+
+Modularidad
+
+✅ Componentes intercambiables
+✅ Alto cohesión, bajo acoplamiento
+✅ Interfaces bien definidas
+✅ Extensibilidad facilitada
+
+Escalabilidad
+
+✅ Escalado horizontal por capas
+✅ Procesamiento asíncrono (FastAPI)
+✅ Caché multinivel (FAISS)
+✅ Paralelización de operaciones
 **Laboratorio de Sistemas Embebidos (LSE)** - Facultad de Ingeniería - Universidad de Buenos Aires
