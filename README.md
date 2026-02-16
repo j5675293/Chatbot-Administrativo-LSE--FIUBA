@@ -1,7 +1,6 @@
 # 🤖 ASESOR ADMINISTRATIVO INTELIGENTE MEDIANTE PROCESAMEINTO DE LENGUAJE NATURAL - POSGRADO LSE-FIUBA
 
-<img width="1875" height="866" alt="IA -LSE" src="https://github.com/user-attachments/assets/5757f9ac-d7cc-48cf-83d6-920636fdfee8" />
-
+<img width="1875" height="866" alt="IA -LSE" src="https://github.com/user-attachments/assets/bf393332-4cd2-4bae-b878-e256184c3493" />
 
 **Trabajo Final** de la Carrera de Especialización en Inteligencia Artificial
 Laboratorio de Sistemas Embebidos (LSE) - Facultad de Ingeniería - Universidad de Buenos Aires
@@ -12,7 +11,7 @@ Laboratorio de Sistemas Embebidos (LSE) - Facultad de Ingeniería - Universidad 
 
 ## Descripción
 
-Agente administrativo inteligente (chatbot) basado en Procesamiento de Lenguaje Natural para la unidad de Posgrado del Laboratorio de Sistemas Embebidos (LSE) de FIUBA. El sistema responde consultas de la comunidad universitaria sobre reglamentos, carreras de especialización (CEIA, CESE, CEIoT), maestrías (MIA, MIAE, MIoT, MCB), procesos administrativos y preguntas frecuentes.
+Agente administrativo inteligente (chatbot) basado en Procesamiento de Lenguaje Natural (PLN) para la unidad de Posgrado del Laboratorio de Sistemas Embebidos (LSE) de FIUBA. El sistema responde consultas de la comunidad universitaria sobre reglamentos, carreras de especialización (CEIA, CESE, CEIoT), maestrías (MIA, MIAE, MIoT, MCB), procesos administrativos y preguntas frecuentes.
 El sistema implementa una arquitectura en 5 capas que combina técnicas avanzadas de RAG (Retrieval-Augmented Generation) con GraphRAG y mecanismos anti-alucinación de triple verificación para garantizar respuestas precisas y verificables.
 
 ### Características principales
@@ -114,85 +113,6 @@ graph TD
     style N fill:#FFCDD2
 ```
 
-## 🎯 Componentes Principales
-
-### 1️⃣ **Interfaz de Usuario (Streamlit)**
-- **Ubicación**: `src/ui/app.py`
-- **Funcionalidad**: Chat conversacional con historial, visualización de fuentes y métricas de confianza
-- **Características**: 
-  - Selector de modo (RAG / GraphRAG / Hybrid)
-  - Respuestas en tiempo real con streaming
-  - Citas expandibles con trazabilidad completa
-
-### 2️⃣ **API REST (FastAPI)**
-- **Ubicación**: `src/api/`
-- **Endpoints principales**:
-  - `POST /chat` - Procesar consulta del usuario
-  - `POST /chat/compare` - Comparación de los 3 modos
-  - `GET /health` - Estado del sistema
-  - `GET /stats` - Estadísticas de uso
-- **Características**: Validación Pydantic, documentación OpenAPI automática, procesamiento asíncrono
-
-### 3️⃣ **Sistema de Recuperación Híbrido**
-
-#### 🔍 **RAG Vectorial (FAISS)**
-- **Ubicación**: `src/rag/`
-- **Componentes**:
-  - `embeddings.py`: Sentence-Transformers multilingüe
-  - `vector_store.py`: FAISS IndexFlatIP + MMR
-  - `retriever.py`: Cross-encoder re-ranking
-- **Ventajas**: Búsqueda semántica ultra-rápida, captura similitud contextual
-
-#### 🕸️ **GraphRAG (NetworkX)**
-- **Ubicación**: `src/graph_rag/`
-- **Componentes**:
-  - `entity_extractor.py`: 10 tipos de entidades académicas
-  - `relationship_mapper.py`: 11 tipos de relaciones
-  - `graph_builder.py`: Construcción del grafo de conocimiento
-  - `graph_retriever.py`: Búsqueda basada en vecindarios y caminos
-- **Ventajas**: Razonamiento multi-hop, captura relaciones complejas
-
-#### 🔀 **Fusión Híbrida**
-- **Ubicación**: `src/hybrid/hybrid_retriever.py`
-- **Estrategias**:
-  - Reciprocal Rank Fusion (RRF)
-  - Weighted Sum con pesos adaptativos
-  - Query-Adaptive Weighting según tipo de consulta
-
-### 4️⃣ **Motor Anti-Alucinación**
-- **Ubicación**: `src/hybrid/anti_hallucination.py`
-- **Módulos**:
-
-#### ✅ **Faithfulness Checker**
-```python
-- NLI (Natural Language Inference): DeBERTa-v3
-- Semantic Similarity: Similitud coseno embedding-based
-- Entailment Analysis: Verificación de implicación lógica
-```
-
-#### 🚫 **Abstention Decider**
-```python
-- Umbral de confianza: < 0.6 → Abstención
-- Detector de inconsistencias en fragmentos recuperados
-- Analizador de ambigüedad en consultas
-```
-
-### 5️⃣ **Pipeline de Datos**
-- **Ubicación**: `src/data_pipeline/`
-- **Flujo**: 
-```
-PDF Files (data/raw/)
-    ↓ pdf_extractor.py (PyMuPDF + pdfplumber)
-Extracted Text
-    ↓ text_cleaner.py (Normalización UTF-8)
-Cleaned Text
-    ↓ chunker.py (Semantic + Overlap)
-Chunks (512-1024 tokens, 25% overlap)
-    ↓ metadata_extractor.py
-Enriched Chunks (data/processed/)
-    ↓ pipeline_orchestrator.py
-FAISS Index (data/indexes/) + Knowledge Graph (data/graphs/)
-```
 
 ## Estructura del proyecto
 
@@ -666,96 +586,6 @@ El sistema expande cada consulta de tres formas:
 | LSE-FIUBA-Trabajo-Final.pdf | Reglamento | Reglamento de trabajo final |
 | Programa de Vinculación.pdf | Vinculación | Programa de vinculación profesional |
 
----
-## 🎯 Características Destacadas
-
-### ✅ **Sistema Híbrido Único**
-Combina lo mejor de RAG vectorial (rapidez, similitud semántica) con GraphRAG (razonamiento relacional, multi-hop) mediante fusión adaptativa que ajusta pesos según el tipo de consulta.
-
-### 🛡️ **Anti-Alucinación Robusto**
-- **Faithfulness**: Verifica cada afirmación usando NLI y similitud semántica
-- **Abstention**: Se abstiene honestamente cuando la confianza es baja (< 0.6)
-- **Citation Manager**: Trazabilidad completa de cada afirmación a su documento fuente
-
-### 🌍 **Optimizado para Español**
-- Embeddings multilingües especializados
-- Normalización de texto en español
-- Prompts nativos en español
-- Manejo de caracteres especiales (tildes, ñ)
-
-### 📊 **Evaluación Comparativa**
-Sistema de evaluación automatizada que compara métricas de:
-- Precisión y Recall
-- F1-Score
-- Latencia
-- Confidence Score
-
-### 🔧 **Modularidad y Extensibilidad**
-- Arquitectura de capas bien definidas
-- Componentes intercambiables (LLM providers)
-- Interfaces claras entre módulos
-- Alto cohesión, bajo acoplamiento
-
-## 🏛️ Principios de Diseño
-
-### **Clean Architecture**
-- ✅ Separación de responsabilidades
-- ✅ Independencia de frameworks
-- ✅ Testabilidad por capas
-- ✅ Inversión de dependencias
-
-### **Modularidad**
-- ✅ Componentes intercambiables
-- ✅ Alto cohesión, bajo acoplamiento
-- ✅ Interfaces bien definidas
-- ✅ Extensibilidad facilitada
-
-### **Escalabilidad**
-- ✅ Escalado horizontal por capas
-- ✅ Procesamiento asíncrono (FastAPI)
-- ✅ Caché multinivel (FAISS)
-- ✅ Paralelización de operaciones
-
-## 📈 Métricas de Rendimiento
-
-| Métrica | RAG Solo | GraphRAG Solo | **Hybrid (Óptimo)** |
-|---------|----------|---------------|---------------------|
-| Precisión | 78% | 72% | **85%** |
-| Recall | 82% | 88% | **91%** |
-| F1-Score | 0.80 | 0.79 | **0.88** |
-| Latencia Promedio | 1.2s | 2.1s | **1.8s** |
-| Confidence Score | 0.71 | 0.68 | **0.79** |
-
-> **Nota**: Métricas basadas en conjunto de test de 150 preguntas del dominio académico de posgrados.
-
-## 🔬 Evaluación y Testing
-
-El proyecto incluye una suite completa de tests:
-
-```bash
-# Ejecutar todos los tests
-pytest
-
-# Con cobertura
-pytest --cov=src --cov-report=html
-
-# Tests específicos
-pytest tests/test_rag/
-pytest tests/test_hybrid/test_anti_hallucination.py
-```
-
-**Cobertura actual**: 87%
-
----
-
-## 📚 Documentación Adicional
-
-Para más detalles sobre componentes específicos, consultar:
-- [Data Pipeline](docs/data_pipeline.md)
-- [RAG System](docs/rag_system.md)
-- [GraphRAG](docs/graph_rag.md)
-- [Anti-Hallucination Engine](docs/anti_hallucination.md)
-- [API Documentation](http://localhost:8000/docs) (cuando el servidor está corriendo)
 
 ---
 **Laboratorio de Sistemas Embebidos (LSE)** - Facultad de Ingeniería - Universidad de Buenos Aires
