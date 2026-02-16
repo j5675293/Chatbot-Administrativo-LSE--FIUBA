@@ -105,12 +105,12 @@ graph TD
     P -->|Rating ≥ 4| R[✅ Success Tracking]
     
     style F fill:#424242
-    style G1 fill:#E3F2FD
-    style G2 fill:#E8F5E9
-    style J fill:#FFEBEE
-    style L fill:#FFF9C4
-    style M fill:#C8E6C9
-    style N fill:#FFCDD2
+    style G1 fill:#6D4C41
+    style G2 fill:#1565C0
+    style J fill:#2E7D32
+    style L fill:#6D4C41
+    style M fill:#1565C0
+    style N fill:#424242
 ```
 
 
