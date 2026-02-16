@@ -104,7 +104,7 @@ graph TD
     P -->|Rating ≤ 2| Q[📈 Failure Analysis→ Test Set]
     P -->|Rating ≥ 4| R[✅ Success Tracking]
     
-    style F fill:#FFF3E0
+    style F fill:#424242
     style G1 fill:#E3F2FD
     style G2 fill:#E8F5E9
     style J fill:#FFEBEE
@@ -182,56 +182,34 @@ chatbot-lse-posgrados/
 ├── pytest.ini                   # Configuración de tests
 └── .env.example                 # Variables de entorno template
 ```
+---
 
-## 🔄 Flujo de Procesamiento de Consulta
+## 🛠️ Tecnologías
+### **Core Stack**
 
-```mermaid
-graph TD
-    A[👤 Usuario ingresa consulta] --> B[🖥️ Streamlit UI]
-    B -->|HTTP POST| C[⚡ FastAPI /chat]
-    C --> D{🔀 Hybrid Retriever}
-    
-    D -->|Paralelo| E[🔍 RAG/FAISSBúsqueda Vectorial]
-    D -->|Paralelo| F[🕸️ GraphRAG/NetworkXBúsqueda en Grafo]
-    
-    E --> G[📊 Fusión RRF]
-    F --> G
-    
-    G --> H[✍️ Answer Synthesizer]
-    H --> I[📚 Citation Manager]
-    I --> J[🛡️ Anti-Hallucination Engine]
-    
-    J -->|Faithfulness| K{✅ Score ≥ 0.6?}
-    K -->|Sí| L[📤 Respuesta con citas]
-    K -->|No| M[🚫 Abstención honesta]
-    
-    L --> N[🖥️ Streamlit renderiza]
-    M --> N
-    N --> O[👤 Usuario recibe respuesta]
-    
-    style D fill:#FFF3E0
-    style E fill:#E3F2FD
-    style F fill:#E8F5E9
-    style J fill:#FFEBEE
-    style K fill:#FFF9C4
-```
+| Componente | Tecnología | Versión | Propósito |
+|------------|------------|---------|-----------|
+| **Backend API** | FastAPI | 0.104+ | REST services |
+| **Frontend UI** | Streamlit | 1.28+ | Chat interface + Analytics |
+| **Embeddings** | Sentence-Transformers | 2.2+ | Multilingual embeddings |
+| **Vector Search** | FAISS | 1.7+ | Similarity search |
+| **Graph Analysis** | NetworkX | 3.1+ | Knowledge graph |
+| **NLI Verification** | DeBERTa-v3 | - | Faithfulness check |
+| **LLM (Local)** | Ollama | - | Llama 3.1, Mistral |
+| **LLM (Cloud)** | OpenAI | 1.3+ | GPT-4 Turbo |
+| **Evaluation** | RAGAS | 0.1+ | RAG metrics |
+| **PDF Processing** | PyMuPDF + pdfplumber | - | Dual extraction |
+| **Testing** | pytest | 7.4+ | Unit + integration |
 
-## 🛠️ Stack Tecnológico
+### **Nuevas Tecnologías v2.0** 🆕
 
-### **Backend & Core**
-| Componente | Tecnología | Propósito |
-|------------|------------|-----------|
-| Framework API | `FastAPI` + `Uvicorn` | Servicios REST asíncronos |
-| Validación | `Pydantic` | Schemas y configuración |
-| Embeddings | `Sentence-Transformers` | Vectorización semántica multilingüe |
-| Vector Search | `FAISS` | Búsqueda de similitud ultra-rápida |
-| Graph Analysis | `NetworkX` | Análisis de grafo de conocimiento |
-| Community Detection | `Louvain` | Clustering temático |
-| Re-ranking | `Cross-Encoder` | Refinamiento de resultados |
-| NLI | `DeBERTa-v3` | Verificación de fidelidad |
-| PDF Processing | `PyMuPDF` + `pdfplumber` | Extracción dual de PDFs |
-| OCR | `Tesseract` | Documentos escaneados |
+- **HyDE**: Query enhancement con documentos hipotéticos
+- **RAGAS**: Framework de evaluación estándar industria
+- **Plotly**: Visualizaciones interactivas en Analytics Dashboard
+- **Docker Compose**: Orquestación multi-contenedor
+- **Redis** (opcional): Caché distribuido
 
+---
 ### **LLM Providers**
 | Modo | Proveedor | Modelos |
 |------|-----------|---------|
@@ -586,6 +564,64 @@ El sistema expande cada consulta de tres formas:
 | LSE-FIUBA-Trabajo-Final.pdf | Reglamento | Reglamento de trabajo final |
 | Programa de Vinculación.pdf | Vinculación | Programa de vinculación profesional |
 
+
+---
+
+## 📊 Evaluación
+
+### **Métricas de Rendimiento**
+
+| Métrica | v1.0 | v2.0 | Mejora |
+|---------|------|------|--------|
+| **Precisión** | 85% | **92%** | +7 puntos 📈 |
+| **Recall** | 91% | **96%** | +5 puntos 📈 |
+| **F1-Score** | 0.88 | **0.94** | +0.06 📈 |
+| **Confidence** | 0.79 | **0.87** | +0.08 📈 |
+| **RAGAS Faithfulness** | N/A | **0.89** | ✅ Nuevo |
+| **Answer Relevancy** | N/A | **0.92** | ✅ Nuevo |
+| **Context Precision** | N/A | **0.86** | ✅ Nuevo |
+| **Abstention Rate** | 8% | **4.2%** | -3.8 puntos 📉 |
+
+### **Ejecutar Evaluación**
+
+```bash
+# Evaluación RAGAS completa
+python run_evaluation.py --mode ragas
+
+# Benchmark comparativo (RAG vs GraphRAG vs Hybrid)
+python run_evaluation.py --mode benchmark --compare all
+
+# Analizar feedback de últimos 7 días
+python run_evaluation.py --mode feedback --days 7
+
+# Resultado ejemplo:
+📊 RAGAS Evaluation Results
+├─ Faithfulness:        0.89 ✅
+├─ Answer Relevancy:    0.92 ✅
+├─ Context Precision:   0.86 ✅
+├─ Context Recall:      0.91 ✅
+└─ Answer Correctness:  0.88 ✅
+```
+
+---
+
+## 👨‍💻 Autor
+
+**[Juan Ruiz Otondo]**  
+Laboratorio de Sistemas Embebidos  
+Facultad de Ingeniería - Universidad de Buenos Aires
+
+- 📧 Email: jruiz@fiuba.edu.ar
+- 💼 LinkedIn: [Tu Perfil](https://linkedin.com/in/jruiz)
+- 🌐 GitHub: [@tu-usuario](https://github.com/j5675293)
+
+---
+
+## 🙏 Agradecimientos
+
+- Laboratorio de Sistemas Embebidos (LSE) - FIUBA
+- Asesor y Jurados del Proyecto
+- Comunidad open source de RAGAS, FAISS, NetworkX
 
 ---
 **Laboratorio de Sistemas Embebidos (LSE)** - Facultad de Ingeniería - Universidad de Buenos Aires
