@@ -65,7 +65,7 @@ El sistema implementa una arquitectura en 5 capas que combina técnicas avanzada
 
 ```mermaid
 graph TD
-    A[👤 Usuario ingresa consulta] --> B[🖥️ Streamlit UI + Analytics]
+    A[👤 Usuario consulta] --> B[🖥️ Streamlit UI + Analytics]
     B -->|HTTP POST| C[⚡ FastAPI]
     
     C --> D1[📝 Conversation Memory]
@@ -633,7 +633,6 @@ Dashboard integrado en Streamlit con métricas en tiempo real:
 ```
 
 ---
-
 ### 5️⃣ **Feedback Loop** 🔄
 
 Sistema completo de recopilación y procesamiento de feedback:
@@ -726,13 +725,13 @@ RAGAS Evaluation:                      Objetividad y reproducibilidad
 
 ## 👨‍💻 Autor
 
-**[Juan Ruiz Otondo]**  
+**Juan Ruiz Otondo**  
 Laboratorio de Sistemas Embebidos  
 Facultad de Ingeniería - Universidad de Buenos Aires
 
 - 📧 Email: jruiz@fiuba.edu.ar
-- 💼 LinkedIn: [Tu Perfil](https://linkedin.com/in/jruiz)
-- 🌐 GitHub: [@tu-usuario](https://github.com/j5675293)
+- 💼 LinkedIn: https://linkedin.com/in/jruizTu Perfil
+- 🌐 GitHub: https://github.com/j5675293
 
 ---
 
@@ -743,4 +742,4 @@ Facultad de Ingeniería - Universidad de Buenos Aires
 - Comunidad open source de RAGAS, FAISS, NetworkX
 
 ---
-**Laboratorio de Sistemas Embebidos (LSE)** - Facultad de Ingeniería - Universidad de Buenos Aires
+ Facultad de Ingeniería - Universidad de Buenos Aires
