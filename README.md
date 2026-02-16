@@ -1,4 +1,4 @@
-# ASESOR ADMINISTRATIVO INTELIGENTE MEDIANTE PROCESAMEINTO DE LENGUAJE NATURAL - POSGRADO LSE-FIUBA
+# 🤖 ASESOR ADMINISTRATIVO INTELIGENTE MEDIANTE PROCESAMEINTO DE LENGUAJE NATURAL - POSGRADO LSE-FIUBA
 
 **Trabajo Final** de la Carrera de Especialización en Inteligencia Artificial
 Laboratorio de Sistemas Embebidos (LSE) - Facultad de Ingeniería - Universidad de Buenos Aires
@@ -9,8 +9,8 @@ Laboratorio de Sistemas Embebidos (LSE) - Facultad de Ingeniería - Universidad 
 
 ## Descripción
 
-Agente administrativo inteligente (chatbot) basado en Procesamiento de Lenguaje Natural para la unidad de Posgrado del Laboratorio de Sistemas Embebidos (LSE) de FIUBA. El sistema responde consultas de estudiantes sobre reglamentos, carreras de especialización (CEIA, CESE, CEIoT), maestrías (MIA, MIAE, MIoT, MCB), procesos administrativos y preguntas frecuentes.
-El sistema implementa una arquitectura en 5 capas que combina técnicas avanzadas de RAG (Retrieval-Augmented Generation) con GraphRAG y mecanismos anti-alucinación para garantizar respuestas precisas y verificables.
+Agente administrativo inteligente (chatbot) basado en Procesamiento de Lenguaje Natural para la unidad de Posgrado del Laboratorio de Sistemas Embebidos (LSE) de FIUBA. El sistema responde consultas de la comunidad universitaria sobre reglamentos, carreras de especialización (CEIA, CESE, CEIoT), maestrías (MIA, MIAE, MIoT, MCB), procesos administrativos y preguntas frecuentes.
+El sistema implementa una arquitectura en 5 capas que combina técnicas avanzadas de RAG (Retrieval-Augmented Generation) con GraphRAG y mecanismos anti-alucinación de triple verificación para garantizar respuestas precisas y verificables.
 
 ### Características principales
 
@@ -29,7 +29,7 @@ El sistema implementa una arquitectura en 5 capas que combina técnicas avanzada
 - **Analytics Dashboard:** Visualización de métricas y feedback del sistema
 - **Docker Compose:** Despliegue completo con un solo comando
 
-## Arquitectura
+## 🏗️ Arquitectura
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -55,6 +55,60 @@ El sistema implementa una arquitectura en 5 capas que combina técnicas avanzada
 ├─────────────────────────────────────────────────────────────────┤
 │          Evaluation (RAGAS + Benchmark + Feedback)               │
 └─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🔄 Flujo de Procesamiento de Consulta
+
+```mermaid
+graph TD
+    A[👤 Usuario ingresa consulta] --> B[🖥️ Streamlit UI + Analytics]
+    B -->|HTTP POST| C[⚡ FastAPI]
+    
+    C --> D1[📝 Conversation Memory]
+    C --> D2[🔍 Query Enhancement]
+    
+    D1 -->|Contexto histórico| E[Reformulación contextual]
+    D2 -->|HyDE + Expansions| E
+    
+    E --> F{🔀 Hybrid Retriever}
+    
+    F -->|Paralelo| G1[🔍 RAG/FAISSQuery + HyDE + Expansions]
+    F -->|Paralelo| G2[🕸️ GraphRAG/NetworkXEntities + Relations]
+    
+    G1 --> H[📊 Reciprocal Rank FusionPesos Adaptativos]
+    G2 --> H
+    
+    H --> I[✍️ Answer Synthesizer+ Citation Manager]
+    
+    I --> J[🛡️ Anti-Hallucination Engine]
+    
+    J --> K1[✅ Faithfulness CheckNLI Score ≥ 0.75]
+    J --> K2[🔗 Cross-Reference0 conflicts]
+    J --> K3[📊 AbstentionConfidence ≥ 0.65]
+    
+    K1 --> L{Pass All 3?}
+    K2 --> L
+    K3 --> L
+    
+    L -->|Sí| M[✅ Respuesta Aprobada]
+    L -->|No| N[🚫 Abstención Honesta]
+    
+    M --> O[🖥️ Streamlit Renderiza]
+    N --> O
+    
+    O --> P[👍 Feedback del Usuario]
+    P -->|Rating ≤ 2| Q[📈 Failure Analysis→ Test Set]
+    P -->|Rating ≥ 4| R[✅ Success Tracking]
+    
+    style F fill:#FFF3E0
+    style G1 fill:#E3F2FD
+    style G2 fill:#E8F5E9
+    style J fill:#FFEBEE
+    style L fill:#FFF9C4
+    style M fill:#C8E6C9
+    style N fill:#FFCDD2
 ```
 
 ## 🎯 Componentes Principales
