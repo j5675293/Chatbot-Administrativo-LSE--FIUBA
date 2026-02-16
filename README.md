@@ -1,6 +1,7 @@
 # 🤖 ASESOR ADMINISTRATIVO INTELIGENTE MEDIANTE PROCESAMEINTO DE LENGUAJE NATURAL - POSGRADO LSE-FIUBA
----
-![Interfaz](images/ejemplo.png)
+
+<img width="1875" height="866" alt="IA -LSE" src="https://github.com/user-attachments/assets/5757f9ac-d7cc-48cf-83d6-920636fdfee8" />
+
 
 **Trabajo Final** de la Carrera de Especialización en Inteligencia Artificial
 Laboratorio de Sistemas Embebidos (LSE) - Facultad de Ingeniería - Universidad de Buenos Aires
